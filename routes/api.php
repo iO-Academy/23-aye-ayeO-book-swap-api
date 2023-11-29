@@ -24,6 +24,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::controller(BookController::class)->group(function () {
     Route::get('/books', 'getAll');
     Route::get('/books/{id}', 'getById');
+    Route::get('/books/check-isbn/{isbn}', 'checkIsbn');
     Route::put('/books/claim/{id}', 'claimById');
     Route::put('/books/return/{id}', 'returnById');
     Route::post('/books', 'add');

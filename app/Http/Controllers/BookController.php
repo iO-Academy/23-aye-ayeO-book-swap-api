@@ -188,8 +188,8 @@ class BookController extends Controller
             'blurb' => 'required|string|max:10000',
             'image' => 'required|url|max:999',
             'year' => 'required|integer',
-            'isbn10' => ['required', 'string', new IsbnRule],
-            'isbn13' => ['required', 'string', new IsbnRule],
+            'isbn10' => ['required', 'string', 'unique:books,isbn10', new IsbnRule],
+            'isbn13' => ['required', 'string', 'unique:books,isbn13', new IsbnRule],
             'language' => 'required|string|max:2'
         ]);
 
@@ -214,5 +214,14 @@ class BookController extends Controller
         return response()->json([
             'message' => 'Unexpected error occurred'
         ], 500);
+    }
+
+    public function checkIsbn($isbn)
+    {
+        $exists = Book::where('isbn10', $isbn)
+            ->orWhere('isbn13', $isbn)
+            ->exists();
+
+        return response()->json(['exists' => $exists]);
     }
 }
