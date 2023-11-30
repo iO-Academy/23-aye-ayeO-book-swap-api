@@ -218,10 +218,20 @@ class BookController extends Controller
 
     public function checkIsbn($isbn)
     {
-        $exists = Book::where('isbn10', $isbn)
-            ->orWhere('isbn13', $isbn)
-            ->exists();
+        // $exists = Book::where('isbn10', $isbn)
+        //     ->orWhere('isbn13', $isbn)
+        //     ->exists();
 
-        return response()->json(['exists' => $exists]);
+        // return response()->json(['exists' => $exists]);
+
+        $book = Book::where('isbn10', $isbn)
+            ->orWhere('isbn13', $isbn)
+            ->first();
+
+        if ($book) {
+            return response()->json(['exists' => true, 'id' => $book->id, 'title' => $book->title]);
+        }
+
+        return response()->json(['exists' => false]);
     }
 }
