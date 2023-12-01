@@ -188,6 +188,7 @@ class BookController extends Controller
             'blurb' => 'required|string|max:10000',
             'image' => 'required|url|max:999',
             'year' => 'required|integer',
+            'page_count' => 'required|integer',
             'isbn10' => ['required', 'string', 'unique:books,isbn10', new IsbnRule],
             'isbn13' => ['required', 'string', 'unique:books,isbn13', new IsbnRule],
             'language' => 'required|string|max:2'
@@ -201,6 +202,7 @@ class BookController extends Controller
         $newBook->blurb = $request->blurb;
         $newBook->image = $request->image;
         $newBook->year = $request->year;
+        $newBook->page_count = $request->page_count;
         $newBook->isbn10 = $request->isbn10;
         $newBook->isbn13 = $request->isbn13;
         $newBook->language = $request->language;
@@ -218,12 +220,6 @@ class BookController extends Controller
 
     public function checkIsbn($isbn)
     {
-        // $exists = Book::where('isbn10', $isbn)
-        //     ->orWhere('isbn13', $isbn)
-        //     ->exists();
-
-        // return response()->json(['exists' => $exists]);
-
         $book = Book::where('isbn10', $isbn)
             ->orWhere('isbn13', $isbn)
             ->first();
