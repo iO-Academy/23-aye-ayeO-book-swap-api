@@ -12,7 +12,7 @@ class ReviewController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'rating' => 'required|integer|min:0|max:5',
-            'review' => 'required|string|min:10|max:1000',
+            'review' => 'required|string|min:10|max:10000',
             'book_id' => 'required|integer|min:1|exists:books,id',
         ]);
 
