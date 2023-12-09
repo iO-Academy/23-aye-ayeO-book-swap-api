@@ -9,7 +9,7 @@ use App\Rules\IsbnRule;
 class BookController extends Controller
 {
 
-    public function getAll(Request $request)
+    public function getAllPages(Request $request)
     {
         $request->validate([
             'claimed' => 'nullable|numeric|min:0|max:1',
@@ -65,7 +65,7 @@ class BookController extends Controller
             )
             ->select(array_diff($this->getBookColumns(), $hidden));
 
-        $books = $booksQuery->select('id', 'title', 'author', 'blurb', 'claimed', 'genre_id', 'image')
+        $books = $booksQuery->select('id', 'title', 'author', 'blurb', 'claimed', 'genre_id', 'image') // Replace with actual columns
             ->paginate(12);
 
         if ($books->isEmpty()) {
@@ -80,9 +80,81 @@ class BookController extends Controller
         ]);
     }
 
-    // private function getBookColumns(): array
+    private function getBookColumns(): array
+    {
+        return (new Book())->getFillable(); // Assuming 'fillable' properties contain all columns of the Book model
+    }
+
+    // public function getAll(Request $request)
     // {
-    //     return (new Book())->getFillable(); // Assuming 'fillable' properties contain all columns of the Book model
+    //     $request->validate([
+    //         'claimed' => 'nullable|numeric|min:0|max:1',
+    //         'genre' => 'nullable|numeric|min:0' . ($request->query('genre') == 0 ? '' : '|exists:genres,id'),
+    //         'search' => 'nullable|string'
+    //     ]);
+
+    //     $hidden =
+    //         [
+    //             'genre_id',
+    //             'created_at',
+    //             'updated_at',
+    //             'blurb',
+    //             'page_count',
+    //             'year',
+    //             'claimed_by_name',
+    //             'claimed_by_email',
+    //             'claimed',
+    //             'isbn10',
+    //             'isbn13',
+    //             'language'
+    //         ];
+
+    //     $claimed = $request->query('claimed');
+    //     $genre = $request->query('genre');
+    //     $search = $request->query('search');
+
+    //     $books = Book::with('genre:id,name')
+
+    //         ->when(
+    //             $search !== null,
+    //             function ($query) use ($search) {
+    //                 return $query->where(function ($query) use ($search) {
+    //                     return $query
+    //                         ->where('title', 'LIKE', '%' . $search . '%')
+    //                         ->orWhere('author', 'LIKE', '%' . $search . '%')
+    //                         ->orWhere('blurb', 'LIKE', '%' . $search . '%');
+    //                 });
+    //             }
+    //         )
+    //         ->when(
+    //             $claimed !== null,
+    //             function ($query) use ($claimed) {
+    //                 return $query
+    //                     ->where('claimed', $claimed);
+    //             }
+    //         )
+    //         ->when(
+    //             $genre !== null,
+    //             function ($query) use ($genre) {
+    //                 if ($genre == 0) {
+    //                     return $query;
+    //                 }
+    //                 return $query->where('genre_id', $genre);
+    //             }
+    //         )
+    //         ->get()
+    //         ->makeHidden($hidden);
+
+    //     if (!count($books)) {
+    //         return response()->json([
+    //             'message' => "No books found"
+    //         ], 404);
+    //     }
+
+    //     return response()->json([
+    //         'data' => $books,
+    //         'message' => 'Books successfully retrieved'
+    //     ]);
     // }
 
 
