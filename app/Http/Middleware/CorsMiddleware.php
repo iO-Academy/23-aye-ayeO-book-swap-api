@@ -15,7 +15,7 @@ class CorsMiddleware
      */
     public function handle($request, Closure $next)
     {
-        $allowedOrigins = ['https://app.swapee.uk', 'https://swapee.uk'];
+        $allowedOrigins = ['*'];
         $origin = $request->header('Origin');
 
         if (in_array($origin, $allowedOrigins)) {
