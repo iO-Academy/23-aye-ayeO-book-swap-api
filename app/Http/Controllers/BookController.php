@@ -8,7 +8,8 @@ use App\Rules\IsbnRule;
 
 class BookController extends Controller
 {
-    public function getAll(Request $request)
+
+    public function getAllPages(Request $request)
     {
         $request->validate([
             'claimed' => 'nullable|numeric|min:0|max:1',
@@ -16,28 +17,26 @@ class BookController extends Controller
             'search' => 'nullable|string'
         ]);
 
-        $hidden =
-            [
-                'genre_id',
-                'created_at',
-                'updated_at',
-                'blurb',
-                'page_count',
-                'year',
-                'claimed_by_name',
-                'claimed_by_email',
-                'claimed',
-                'isbn10',
-                'isbn13',
-                'language'
-            ];
+        $hidden = [
+            'genre_id',
+            'created_at',
+            'updated_at',
+            'blurb',
+            'page_count',
+            'year',
+            'claimed_by_name',
+            'claimed_by_email',
+            'claimed',
+            'isbn10',
+            'isbn13',
+            'language'
+        ];
 
         $claimed = $request->query('claimed');
         $genre = $request->query('genre');
         $search = $request->query('search');
 
-        $books = Book::with('genre:id,name')
-
+        $booksQuery = Book::with('genre:id,name')
             ->when(
                 $search !== null,
                 function ($query) use ($search) {
@@ -52,8 +51,7 @@ class BookController extends Controller
             ->when(
                 $claimed !== null,
                 function ($query) use ($claimed) {
-                    return $query
-                        ->where('claimed', $claimed);
+                    return $query->where('claimed', $claimed);
                 }
             )
             ->when(
@@ -65,10 +63,12 @@ class BookController extends Controller
                     return $query->where('genre_id', $genre);
                 }
             )
-            ->get()
-            ->makeHidden($hidden);
+            ->select(array_diff($this->getBookColumns(), $hidden));
 
-        if (!count($books)) {
+        $books = $booksQuery->select('id', 'title', 'author', 'blurb', 'claimed', 'genre_id', 'image') // Replace with actual columns
+            ->paginate(12);
+
+        if ($books->isEmpty()) {
             return response()->json([
                 'message' => "No books found"
             ], 404);
@@ -79,6 +79,83 @@ class BookController extends Controller
             'message' => 'Books successfully retrieved'
         ]);
     }
+
+    private function getBookColumns(): array
+    {
+        return (new Book())->getFillable(); // Assuming 'fillable' properties contain all columns of the Book model
+    }
+
+    // public function getAll(Request $request)
+    // {
+    //     $request->validate([
+    //         'claimed' => 'nullable|numeric|min:0|max:1',
+    //         'genre' => 'nullable|numeric|min:0' . ($request->query('genre') == 0 ? '' : '|exists:genres,id'),
+    //         'search' => 'nullable|string'
+    //     ]);
+
+    //     $hidden =
+    //         [
+    //             'genre_id',
+    //             'created_at',
+    //             'updated_at',
+    //             'blurb',
+    //             'page_count',
+    //             'year',
+    //             'claimed_by_name',
+    //             'claimed_by_email',
+    //             'claimed',
+    //             'isbn10',
+    //             'isbn13',
+    //             'language'
+    //         ];
+
+    //     $claimed = $request->query('claimed');
+    //     $genre = $request->query('genre');
+    //     $search = $request->query('search');
+
+    //     $books = Book::with('genre:id,name')
+
+    //         ->when(
+    //             $search !== null,
+    //             function ($query) use ($search) {
+    //                 return $query->where(function ($query) use ($search) {
+    //                     return $query
+    //                         ->where('title', 'LIKE', '%' . $search . '%')
+    //                         ->orWhere('author', 'LIKE', '%' . $search . '%')
+    //                         ->orWhere('blurb', 'LIKE', '%' . $search . '%');
+    //                 });
+    //             }
+    //         )
+    //         ->when(
+    //             $claimed !== null,
+    //             function ($query) use ($claimed) {
+    //                 return $query
+    //                     ->where('claimed', $claimed);
+    //             }
+    //         )
+    //         ->when(
+    //             $genre !== null,
+    //             function ($query) use ($genre) {
+    //                 if ($genre == 0) {
+    //                     return $query;
+    //                 }
+    //                 return $query->where('genre_id', $genre);
+    //             }
+    //         )
+    //         ->get()
+    //         ->makeHidden($hidden);
+
+    //     if (!count($books)) {
+    //         return response()->json([
+    //             'message' => "No books found"
+    //         ], 404);
+    //     }
+
+    //     return response()->json([
+    //         'data' => $books,
+    //         'message' => 'Books successfully retrieved'
+    //     ]);
+    // }
 
 
     public function getById(int|string $id)
@@ -188,8 +265,9 @@ class BookController extends Controller
             'blurb' => 'required|string|max:10000',
             'image' => 'required|url|max:999',
             'year' => 'required|integer',
-            'isbn10' => ['required', 'string', new IsbnRule],
-            'isbn13' => ['required', 'string', new IsbnRule],
+            'page_count' => 'required|integer',
+            'isbn10' => ['required', 'string', 'unique:books,isbn10', new IsbnRule],
+            'isbn13' => ['required', 'string', 'unique:books,isbn13', new IsbnRule],
             'language' => 'required|string|max:2'
         ]);
 
@@ -201,6 +279,7 @@ class BookController extends Controller
         $newBook->blurb = $request->blurb;
         $newBook->image = $request->image;
         $newBook->year = $request->year;
+        $newBook->page_count = $request->page_count;
         $newBook->isbn10 = $request->isbn10;
         $newBook->isbn13 = $request->isbn13;
         $newBook->language = $request->language;
@@ -214,5 +293,18 @@ class BookController extends Controller
         return response()->json([
             'message' => 'Unexpected error occurred'
         ], 500);
+    }
+
+    public function checkIsbn($isbn)
+    {
+        $book = Book::where('isbn10', $isbn)
+            ->orWhere('isbn13', $isbn)
+            ->first();
+
+        if ($book) {
+            return response()->json(['exists' => true, 'id' => $book->id, 'title' => $book->title]);
+        }
+
+        return response()->json(['exists' => false]);
     }
 }

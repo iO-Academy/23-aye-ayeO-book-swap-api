@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('books', function (Blueprint $table) {
-            $table->text('blurb')->nullable();
-            $table->integer('page_count')->nullable();
-            $table->integer('year')->nullable();
+            $table->text('blurb');
+            $table->integer('page_count');
+            $table->integer('year');
         });
     }
 
